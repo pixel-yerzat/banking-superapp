@@ -1,6 +1,12 @@
 import { query, getClient } from '../config/database';
 import { generateOTP, getOTPExpiry, isExpired } from '../utils/generators';
+import { Vonage } from '@vonage/server-sdk';
 import logger from '../utils/logger';
+
+const vonage = new Vonage({
+  apiKey: "bc643e17",
+  apiSecret: "PHY5Jw6nsNx*mZO9Du$zSvT" // if you want to manage your secret, please do so by visiting your API Settings page in your dashboard
+})
 
 interface OTPCode {
   id: string;
@@ -234,6 +240,12 @@ export const sendOTPviaSMS = async (phone: string, code: string): Promise<boolea
     logger.info('OTP SMS would be sent', { 
       phone: phone.replace(/\d(?=\d{4})/g, '*'),
       code: '******' // Не логируем реальный код в production
+    });
+
+    await vonage.sms.send({
+      to: phone,
+      from: "BankingSuperApp",
+      text: `Код подтверждения: ${code}`
     });
 
     // В режиме разработки просто логируем
