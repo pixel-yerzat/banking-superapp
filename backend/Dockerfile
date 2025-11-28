@@ -10,7 +10,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 
 
-
+RUN npm install @vonage/server-sdk
 # Устанавливаем зависимости
 RUN npm i \
 npm cache clean --force
