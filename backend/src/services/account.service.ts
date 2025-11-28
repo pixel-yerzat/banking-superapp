@@ -1,7 +1,13 @@
-import { query, getClient } from '../config/database';
-import { Account, CreateAccountDto, AccountType, Currency, AccountStatus } from '../types';
-import { generateAccountNumber } from '../utils/generators';
-import logger from '../utils/logger';
+import { query, getClient } from "../config/database";
+import {
+  Account,
+  CreateAccountDto,
+  AccountType,
+  Currency,
+  AccountStatus,
+} from "../types";
+import { generateAccountNumber } from "../utils/generators";
+import logger from "../utils/logger";
 
 /**
  * Создание нового счета
@@ -11,18 +17,20 @@ export const createAccount = async (
   accountData: CreateAccountDto
 ): Promise<Account> => {
   const client = await getClient();
-  
+
+  console.log("Creating account for user:", userId, "with data:", accountData);
+
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Генерируем уникальный номер счета
     let accountNumber: string;
     let isUnique = false;
-    
+
     while (!isUnique) {
       accountNumber = generateAccountNumber();
       const existing = await client.query(
-        'SELECT id FROM accounts WHERE account_number = $1',
+        "SELECT id FROM accounts WHERE account_number = $1",
         [accountNumber]
       );
       isUnique = existing.rows.length === 0;
@@ -39,23 +47,23 @@ export const createAccount = async (
         accountNumber!,
         accountData.account_type,
         accountData.currency,
-        0.00,
-        0.00
+        0.0,
+        0.0,
       ]
     );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
-    logger.info('Account created', { 
-      userId, 
+    logger.info("Account created", {
+      userId,
       accountId: result.rows[0].id,
-      accountNumber: accountNumber!
+      accountNumber: accountNumber!,
     });
 
     return result.rows[0];
   } catch (error) {
-    await client.query('ROLLBACK');
-    logger.error('Error creating account:', error);
+    await client.query("ROLLBACK");
+    logger.error("Error creating account:", error);
     throw error;
   } finally {
     client.release();
@@ -76,7 +84,7 @@ export const getUserAccounts = async (userId: string): Promise<Account[]> => {
 
     return result.rows;
   } catch (error) {
-    logger.error('Error getting user accounts:', error);
+    logger.error("Error getting user accounts:", error);
     throw error;
   }
 };
@@ -84,12 +92,13 @@ export const getUserAccounts = async (userId: string): Promise<Account[]> => {
 /**
  * Получение счета по ID
  */
-export const getAccountById = async (accountId: string): Promise<Account | null> => {
+export const getAccountById = async (
+  accountId: string
+): Promise<Account | null> => {
   try {
-    const result = await query(
-      'SELECT * FROM accounts WHERE id = $1',
-      [accountId]
-    );
+    const result = await query("SELECT * FROM accounts WHERE id = $1", [
+      accountId,
+    ]);
 
     if (result.rows.length === 0) {
       return null;
@@ -97,7 +106,7 @@ export const getAccountById = async (accountId: string): Promise<Account | null>
 
     return result.rows[0];
   } catch (error) {
-    logger.error('Error getting account by ID:', error);
+    logger.error("Error getting account by ID:", error);
     throw error;
   }
 };
@@ -105,10 +114,12 @@ export const getAccountById = async (accountId: string): Promise<Account | null>
 /**
  * Получение счета по номеру
  */
-export const getAccountByNumber = async (accountNumber: string): Promise<Account | null> => {
+export const getAccountByNumber = async (
+  accountNumber: string
+): Promise<Account | null> => {
   try {
     const result = await query(
-      'SELECT * FROM accounts WHERE account_number = $1',
+      "SELECT * FROM accounts WHERE account_number = $1",
       [accountNumber]
     );
 
@@ -118,7 +129,7 @@ export const getAccountByNumber = async (accountNumber: string): Promise<Account
 
     return result.rows[0];
   } catch (error) {
-    logger.error('Error getting account by number:', error);
+    logger.error("Error getting account by number:", error);
     throw error;
   }
 };
@@ -130,15 +141,18 @@ export const isAccountOwner = async (
   accountId: string,
   userId: string
 ): Promise<boolean> => {
+  logger.info("Checking account ownership", { accountId, userId });
   try {
     const result = await query(
-      'SELECT id FROM accounts WHERE id = $1 AND user_id = $2',
+      "SELECT id FROM accounts WHERE id = $1 AND user_id = $2",
       [accountId, userId]
     );
 
+    logger.info("Account ownership check result", { rows: result.rows });
+
     return result.rows.length > 0;
   } catch (error) {
-    logger.error('Error checking account ownership:', error);
+    logger.error("Error checking account ownership:", error);
     throw error;
   }
 };
@@ -146,19 +160,21 @@ export const isAccountOwner = async (
 /**
  * Получение баланса счета
  */
-export const getAccountBalance = async (accountId: string): Promise<{
+export const getAccountBalance = async (
+  accountId: string
+): Promise<{
   balance: number;
   available_balance: number;
   currency: Currency;
 }> => {
   try {
     const result = await query(
-      'SELECT balance, available_balance, currency FROM accounts WHERE id = $1',
+      "SELECT balance, available_balance, currency FROM accounts WHERE id = $1",
       [accountId]
     );
 
     if (result.rows.length === 0) {
-      throw new Error('Account not found');
+      throw new Error("Account not found");
     }
 
     return {
@@ -167,7 +183,7 @@ export const getAccountBalance = async (accountId: string): Promise<{
       currency: result.rows[0].currency,
     };
   } catch (error) {
-    logger.error('Error getting account balance:', error);
+    logger.error("Error getting account balance:", error);
     throw error;
   }
 };
@@ -181,18 +197,21 @@ export const updateAccountBalance = async (
   isDebit: boolean // true = списание, false = пополнение
 ): Promise<void> => {
   const client = await getClient();
-  
-  try {
-    await client.query('BEGIN');
 
+  try {
+    await client.query("BEGIN");
+
+    logger.info("Updating account balance", { accountId, amount, isDebit });
     // Получаем текущий баланс
     const result = await client.query(
-      'SELECT balance, available_balance FROM accounts WHERE id = $1 FOR UPDATE',
+      "SELECT balance, available_balance FROM accounts WHERE id = $1 ",
       [accountId]
     );
 
+    logger.info("Current account balance fetched", { rows: result.rows });
+
     if (result.rows.length === 0) {
-      throw new Error('Account not found');
+      throw new Error("Account not found");
     }
 
     const currentBalance = parseFloat(result.rows[0].balance);
@@ -200,16 +219,16 @@ export const updateAccountBalance = async (
 
     // Проверяем достаточность средств для списания
     if (isDebit && currentAvailable < amount) {
-      throw new Error('Insufficient funds');
+      throw new Error("Insufficient funds");
     }
 
     // Вычисляем новый баланс
-    const newBalance = isDebit 
-      ? currentBalance - amount 
+    const newBalance = isDebit
+      ? currentBalance - amount
       : currentBalance + amount;
-    
-    const newAvailable = isDebit 
-      ? currentAvailable - amount 
+
+    const newAvailable = isDebit
+      ? currentAvailable - amount
       : currentAvailable + amount;
 
     // Обновляем баланс
@@ -220,17 +239,17 @@ export const updateAccountBalance = async (
       [newBalance, newAvailable, accountId]
     );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
-    logger.info('Account balance updated', { 
-      accountId, 
-      amount, 
+    logger.info("Account balance updated", {
+      accountId,
+      amount,
       isDebit,
-      newBalance 
+      newBalance,
     });
   } catch (error) {
-    await client.query('ROLLBACK');
-    logger.error('Error updating account balance:', error);
+    await client.query("ROLLBACK");
+    logger.error("Error updating account balance:", error);
     throw error;
   } finally {
     client.release();
@@ -242,14 +261,14 @@ export const updateAccountBalance = async (
  */
 export const blockAccount = async (accountId: string): Promise<void> => {
   try {
-    await query(
-      'UPDATE accounts SET status = $1 WHERE id = $2',
-      [AccountStatus.BLOCKED, accountId]
-    );
+    await query("UPDATE accounts SET status = $1 WHERE id = $2", [
+      AccountStatus.BLOCKED,
+      accountId,
+    ]);
 
-    logger.info('Account blocked', { accountId });
+    logger.info("Account blocked", { accountId });
   } catch (error) {
-    logger.error('Error blocking account:', error);
+    logger.error("Error blocking account:", error);
     throw error;
   }
 };
@@ -259,14 +278,14 @@ export const blockAccount = async (accountId: string): Promise<void> => {
  */
 export const unblockAccount = async (accountId: string): Promise<void> => {
   try {
-    await query(
-      'UPDATE accounts SET status = $1 WHERE id = $2',
-      [AccountStatus.ACTIVE, accountId]
-    );
+    await query("UPDATE accounts SET status = $1 WHERE id = $2", [
+      AccountStatus.ACTIVE,
+      accountId,
+    ]);
 
-    logger.info('Account unblocked', { accountId });
+    logger.info("Account unblocked", { accountId });
   } catch (error) {
-    logger.error('Error unblocking account:', error);
+    logger.error("Error unblocking account:", error);
     throw error;
   }
 };
@@ -276,24 +295,24 @@ export const unblockAccount = async (accountId: string): Promise<void> => {
  */
 export const closeAccount = async (accountId: string): Promise<void> => {
   const client = await getClient();
-  
+
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Проверяем что баланс равен нулю
     const result = await client.query(
-      'SELECT balance FROM accounts WHERE id = $1',
+      "SELECT balance FROM accounts WHERE id = $1",
       [accountId]
     );
 
     if (result.rows.length === 0) {
-      throw new Error('Account not found');
+      throw new Error("Account not found");
     }
 
     const balance = parseFloat(result.rows[0].balance);
 
     if (balance !== 0) {
-      throw new Error('Cannot close account with non-zero balance');
+      throw new Error("Cannot close account with non-zero balance");
     }
 
     // Закрываем счет
@@ -304,12 +323,12 @@ export const closeAccount = async (accountId: string): Promise<void> => {
       [AccountStatus.CLOSED, accountId]
     );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
-    logger.info('Account closed', { accountId });
+    logger.info("Account closed", { accountId });
   } catch (error) {
-    await client.query('ROLLBACK');
-    logger.error('Error closing account:', error);
+    await client.query("ROLLBACK");
+    logger.error("Error closing account:", error);
     throw error;
   } finally {
     client.release();
@@ -319,11 +338,13 @@ export const closeAccount = async (accountId: string): Promise<void> => {
 /**
  * Получение общего баланса пользователя по всем счетам
  */
-export const getTotalBalance = async (userId: string): Promise<{
+export const getTotalBalance = async (
+  userId: string
+): Promise<{
   [currency: string]: {
     total: number;
     available: number;
-  }
+  };
 }> => {
   try {
     const result = await query(
@@ -338,7 +359,7 @@ export const getTotalBalance = async (userId: string): Promise<{
 
     const balances: any = {};
 
-    result.rows.forEach(row => {
+    result.rows.forEach((row) => {
       balances[row.currency] = {
         total: parseFloat(row.total_balance),
         available: parseFloat(row.available_balance),
@@ -347,7 +368,7 @@ export const getTotalBalance = async (userId: string): Promise<{
 
     return balances;
   } catch (error) {
-    logger.error('Error getting total balance:', error);
+    logger.error("Error getting total balance:", error);
     throw error;
   }
 };
@@ -371,7 +392,7 @@ export const getAccountsByCurrency = async (
 
     return result.rows;
   } catch (error) {
-    logger.error('Error getting accounts by currency:', error);
+    logger.error("Error getting accounts by currency:", error);
     throw error;
   }
 };

@@ -29,10 +29,10 @@ export interface User {
 }
 
 export enum UserStatus {
-  ACTIVE = 'active',
-  BLOCKED = 'blocked',
-  PENDING = 'pending',
-  SUSPENDED = 'suspended',
+  ACTIVE = "active",
+  BLOCKED = "blocked",
+  PENDING = "pending",
+  SUSPENDED = "suspended",
 }
 
 export interface CreateUserDto {
@@ -75,23 +75,23 @@ export interface Account {
 }
 
 export enum AccountType {
-  CHECKING = 'checking',
-  SAVINGS = 'savings',
-  DEPOSIT = 'deposit',
-  CREDIT = 'credit',
+  CHECKING = "checking",
+  SAVINGS = "savings",
+  DEPOSIT = "deposit",
+  CREDIT = "credit",
 }
 
 export enum AccountStatus {
-  ACTIVE = 'active',
-  BLOCKED = 'blocked',
-  CLOSED = 'closed',
+  ACTIVE = "active",
+  BLOCKED = "blocked",
+  CLOSED = "closed",
 }
 
 export enum Currency {
-  KZT = 'KZT',
-  USD = 'USD',
-  EUR = 'EUR',
-  RUB = 'RUB',
+  KZT = "KZT",
+  USD = "USD",
+  EUR = "EUR",
+  RUB = "RUB",
 }
 
 export interface CreateAccountDto {
@@ -122,23 +122,23 @@ export interface Card {
 }
 
 export enum CardType {
-  DEBIT = 'debit',
-  CREDIT = 'credit',
-  VIRTUAL = 'virtual',
+  DEBIT = "debit",
+  CREDIT = "credit",
+  VIRTUAL = "virtual",
 }
 
 export enum PaymentSystem {
-  VISA = 'visa',
-  MASTERCARD = 'mastercard',
-  MIR = 'mir',
-  UNIONPAY = 'unionpay',
+  VISA = "visa",
+  MASTERCARD = "mastercard",
+  MIR = "mir",
+  UNIONPAY = "unionpay",
 }
 
 export enum CardStatus {
-  ACTIVE = 'active',
-  BLOCKED = 'blocked',
-  EXPIRED = 'expired',
-  LOST = 'lost',
+  ACTIVE = "active",
+  BLOCKED = "blocked",
+  EXPIRED = "expired",
+  LOST = "lost",
 }
 
 // ===============================================
@@ -163,21 +163,21 @@ export interface Transaction {
 }
 
 export enum TransactionType {
-  TRANSFER = 'transfer',
-  PAYMENT = 'payment',
-  DEPOSIT = 'deposit',
-  WITHDRAWAL = 'withdrawal',
-  FEE = 'fee',
-  INTEREST = 'interest',
-  CASHBACK = 'cashback',
-  REFUND = 'refund',
+  TRANSFER = "transfer",
+  PAYMENT = "payment",
+  DEPOSIT = "deposit",
+  WITHDRAWAL = "withdrawal",
+  FEE = "fee",
+  INTEREST = "interest",
+  CASHBACK = "cashback",
+  REFUND = "refund",
 }
 
 export enum TransactionStatus {
-  PENDING = 'pending',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled',
+  PENDING = "pending",
+  COMPLETED = "completed",
+  FAILED = "failed",
+  CANCELLED = "cancelled",
 }
 
 export interface CreateTransactionDto {
@@ -247,17 +247,17 @@ export interface Loan {
 }
 
 export enum LoanType {
-  CONSUMER = 'consumer',
-  MORTGAGE = 'mortgage',
-  CAR = 'car',
-  BUSINESS = 'business',
+  CONSUMER = "consumer",
+  MORTGAGE = "mortgage",
+  CAR = "car",
+  BUSINESS = "business",
 }
 
 export enum LoanStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  PAID_OFF = 'paid_off',
-  DEFAULTED = 'defaulted',
+  PENDING = "pending",
+  ACTIVE = "active",
+  PAID_OFF = "paid_off",
+  DEFAULTED = "defaulted",
 }
 
 // ===============================================
@@ -282,15 +282,15 @@ export interface Deposit {
 }
 
 export enum DepositType {
-  FIXED = 'fixed',
-  FLEXIBLE = 'flexible',
-  SAVINGS = 'savings',
+  FIXED = "fixed",
+  FLEXIBLE = "flexible",
+  SAVINGS = "savings",
 }
 
 export enum DepositStatus {
-  ACTIVE = 'active',
-  CLOSED = 'closed',
-  MATURED = 'matured',
+  ACTIVE = "active",
+  CLOSED = "closed",
+  MATURED = "matured",
 }
 
 // ===============================================
@@ -311,19 +311,19 @@ export interface Notification {
 }
 
 export enum NotificationType {
-  TRANSACTION = 'transaction',
-  SECURITY = 'security',
-  MARKETING = 'marketing',
-  SYSTEM = 'system',
-  LOAN_PAYMENT = 'loan_payment',
-  CARD = 'card',
+  TRANSACTION = "transaction",
+  SECURITY = "security",
+  MARKETING = "marketing",
+  SYSTEM = "system",
+  LOAN_PAYMENT = "loan_payment",
+  CARD = "card",
 }
 
 export enum NotificationPriority {
-  LOW = 'low',
-  NORMAL = 'normal',
-  HIGH = 'high',
-  URGENT = 'urgent',
+  LOW = "low",
+  NORMAL = "normal",
+  HIGH = "high",
+  URGENT = "urgent",
 }
 
 // ===============================================
@@ -347,7 +347,7 @@ export interface TokenPayload {
 }
 
 export interface AuthResponse {
-  user: Omit<User, 'password_hash'>;
+  user: Omit<User, "password_hash">;
   accessToken: string;
   refreshToken: string;
 }
@@ -375,7 +375,7 @@ export interface PaginationQuery {
   page?: number;
   limit?: number;
   sort?: string;
-  order?: 'ASC' | 'DESC';
+  order?: "ASC" | "DESC";
 }
 
 // ===============================================
@@ -386,7 +386,11 @@ export class AppError extends Error {
   statusCode: number;
   isOperational: boolean;
 
-  constructor(message: string, statusCode: number = 500, isOperational: boolean = true) {
+  constructor(
+    message: string,
+    statusCode: number = 500,
+    isOperational: boolean = true
+  ) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = isOperational;
@@ -398,4 +402,4 @@ export class AppError extends Error {
 // PAYMENT CATEGORIES AND PROVIDERS (Этап 4)
 // ===============================================
 
-export * from './payments';
+export * from "./payments";

@@ -1,39 +1,46 @@
-import { Request, Response } from 'express';
-import * as accountService from '../services/account.service';
-import { CreateAccountDto } from '../types';
-import logger from '../utils/logger';
+import { Request, Response } from "express";
+import * as accountService from "../services/account.service";
+import { CreateAccountDto } from "../types";
+import logger from "../utils/logger";
 
 /**
  * Создание нового счета
  * POST /api/v1/accounts
  */
-export const createAccount = async (req: Request, res: Response): Promise<void> => {
+export const createAccount = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  console.log("Create account request body:", req);
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
 
     const accountData: CreateAccountDto = req.body;
 
-    const account = await accountService.createAccount(req.user.userId, accountData);
+    const account = await accountService.createAccount(
+      req.user.userId,
+      accountData
+    );
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully',
+      message: "Account created successfully",
       data: account,
     });
   } catch (error) {
-    logger.error('Create account controller error:', error);
-    
+    logger.error("Create account controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Account Creation Failed',
+        error: "Account Creation Failed",
         message: error.message,
       });
       return;
@@ -41,8 +48,8 @@ export const createAccount = async (req: Request, res: Response): Promise<void> 
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to create account',
+      error: "Internal Server Error",
+      message: "Failed to create account",
     });
   }
 };
@@ -51,13 +58,16 @@ export const createAccount = async (req: Request, res: Response): Promise<void> 
  * Получение всех счетов пользователя
  * GET /api/v1/accounts
  */
-export const getUserAccounts = async (req: Request, res: Response): Promise<void> => {
+export const getUserAccounts = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -69,12 +79,12 @@ export const getUserAccounts = async (req: Request, res: Response): Promise<void
       data: accounts,
     });
   } catch (error) {
-    logger.error('Get user accounts controller error:', error);
-    
+    logger.error("Get user accounts controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get accounts',
+      error: "Internal Server Error",
+      message: "Failed to get accounts",
     });
   }
 };
@@ -83,13 +93,16 @@ export const getUserAccounts = async (req: Request, res: Response): Promise<void
  * Получение счета по ID
  * GET /api/v1/accounts/:accountId
  */
-export const getAccountById = async (req: Request, res: Response): Promise<void> => {
+export const getAccountById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -97,13 +110,16 @@ export const getAccountById = async (req: Request, res: Response): Promise<void>
     const { accountId } = req.params;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(accountId, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      accountId,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -113,8 +129,8 @@ export const getAccountById = async (req: Request, res: Response): Promise<void>
     if (!account) {
       res.status(404).json({
         success: false,
-        error: 'Not Found',
-        message: 'Account not found',
+        error: "Not Found",
+        message: "Account not found",
       });
       return;
     }
@@ -124,12 +140,12 @@ export const getAccountById = async (req: Request, res: Response): Promise<void>
       data: account,
     });
   } catch (error) {
-    logger.error('Get account by ID controller error:', error);
-    
+    logger.error("Get account by ID controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get account',
+      error: "Internal Server Error",
+      message: "Failed to get account",
     });
   }
 };
@@ -138,13 +154,16 @@ export const getAccountById = async (req: Request, res: Response): Promise<void>
  * Получение баланса счета
  * GET /api/v1/accounts/:accountId/balance
  */
-export const getAccountBalance = async (req: Request, res: Response): Promise<void> => {
+export const getAccountBalance = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -152,13 +171,16 @@ export const getAccountBalance = async (req: Request, res: Response): Promise<vo
     const { accountId } = req.params;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(accountId, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      accountId,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -170,21 +192,21 @@ export const getAccountBalance = async (req: Request, res: Response): Promise<vo
       data: balance,
     });
   } catch (error) {
-    logger.error('Get account balance controller error:', error);
-    
-    if (error instanceof Error && error.message === 'Account not found') {
+    logger.error("Get account balance controller error:", error);
+
+    if (error instanceof Error && error.message === "Account not found") {
       res.status(404).json({
         success: false,
-        error: 'Not Found',
-        message: 'Account not found',
+        error: "Not Found",
+        message: "Account not found",
       });
       return;
     }
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get account balance',
+      error: "Internal Server Error",
+      message: "Failed to get account balance",
     });
   }
 };
@@ -193,13 +215,16 @@ export const getAccountBalance = async (req: Request, res: Response): Promise<vo
  * Получение общего баланса по всем счетам
  * GET /api/v1/accounts/total-balance
  */
-export const getTotalBalance = async (req: Request, res: Response): Promise<void> => {
+export const getTotalBalance = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -211,12 +236,12 @@ export const getTotalBalance = async (req: Request, res: Response): Promise<void
       data: totalBalance,
     });
   } catch (error) {
-    logger.error('Get total balance controller error:', error);
-    
+    logger.error("Get total balance controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get total balance',
+      error: "Internal Server Error",
+      message: "Failed to get total balance",
     });
   }
 };
@@ -225,13 +250,16 @@ export const getTotalBalance = async (req: Request, res: Response): Promise<void
  * Блокировка счета
  * POST /api/v1/accounts/:accountId/block
  */
-export const blockAccount = async (req: Request, res: Response): Promise<void> => {
+export const blockAccount = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -239,13 +267,16 @@ export const blockAccount = async (req: Request, res: Response): Promise<void> =
     const { accountId } = req.params;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(accountId, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      accountId,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -254,15 +285,15 @@ export const blockAccount = async (req: Request, res: Response): Promise<void> =
 
     res.status(200).json({
       success: true,
-      message: 'Account blocked successfully',
+      message: "Account blocked successfully",
     });
   } catch (error) {
-    logger.error('Block account controller error:', error);
-    
+    logger.error("Block account controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to block account',
+      error: "Internal Server Error",
+      message: "Failed to block account",
     });
   }
 };
@@ -271,13 +302,16 @@ export const blockAccount = async (req: Request, res: Response): Promise<void> =
  * Разблокировка счета
  * POST /api/v1/accounts/:accountId/unblock
  */
-export const unblockAccount = async (req: Request, res: Response): Promise<void> => {
+export const unblockAccount = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -285,13 +319,16 @@ export const unblockAccount = async (req: Request, res: Response): Promise<void>
     const { accountId } = req.params;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(accountId, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      accountId,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -300,15 +337,15 @@ export const unblockAccount = async (req: Request, res: Response): Promise<void>
 
     res.status(200).json({
       success: true,
-      message: 'Account unblocked successfully',
+      message: "Account unblocked successfully",
     });
   } catch (error) {
-    logger.error('Unblock account controller error:', error);
-    
+    logger.error("Unblock account controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to unblock account',
+      error: "Internal Server Error",
+      message: "Failed to unblock account",
     });
   }
 };
@@ -317,13 +354,16 @@ export const unblockAccount = async (req: Request, res: Response): Promise<void>
  * Закрытие счета
  * POST /api/v1/accounts/:accountId/close
  */
-export const closeAccount = async (req: Request, res: Response): Promise<void> => {
+export const closeAccount = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -331,13 +371,16 @@ export const closeAccount = async (req: Request, res: Response): Promise<void> =
     const { accountId } = req.params;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(accountId, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      accountId,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -346,15 +389,15 @@ export const closeAccount = async (req: Request, res: Response): Promise<void> =
 
     res.status(200).json({
       success: true,
-      message: 'Account closed successfully',
+      message: "Account closed successfully",
     });
   } catch (error) {
-    logger.error('Close account controller error:', error);
-    
+    logger.error("Close account controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Account Closure Failed',
+        error: "Account Closure Failed",
         message: error.message,
       });
       return;
@@ -362,8 +405,8 @@ export const closeAccount = async (req: Request, res: Response): Promise<void> =
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to close account',
+      error: "Internal Server Error",
+      message: "Failed to close account",
     });
   }
 };

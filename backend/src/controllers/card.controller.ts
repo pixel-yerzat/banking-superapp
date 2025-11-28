@@ -1,35 +1,47 @@
-import { Request, Response } from 'express';
-import * as cardService from '../services/card.service';
-import * as accountService from '../services/account.service';
-import { CardType, PaymentSystem } from '../types';
-import logger from '../utils/logger';
-import { maskCardNumber } from '../utils/generators';
+import { Request, Response } from "express";
+import * as cardService from "../services/card.service";
+import * as accountService from "../services/account.service";
+import { CardType, PaymentSystem } from "../types";
+import logger from "../utils/logger";
+import { maskCardNumber } from "../utils/generators";
 
 /**
  * Создание новой карты
  * POST /api/v1/cards
  */
-export const createCard = async (req: Request, res: Response): Promise<void> => {
+export const createCard = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
 
-    const { account_id, card_type, payment_system, daily_limit, monthly_limit } = req.body;
+    const {
+      account_id,
+      card_type,
+      payment_system,
+      daily_limit,
+      monthly_limit,
+    } = req.body;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(account_id, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      account_id,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -54,16 +66,16 @@ export const createCard = async (req: Request, res: Response): Promise<void> => 
 
     res.status(201).json({
       success: true,
-      message: 'Card created successfully',
+      message: "Card created successfully",
       data: responseCard,
     });
   } catch (error) {
-    logger.error('Create card controller error:', error);
-    
+    logger.error("Create card controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Card Creation Failed',
+        error: "Card Creation Failed",
         message: error.message,
       });
       return;
@@ -71,8 +83,8 @@ export const createCard = async (req: Request, res: Response): Promise<void> => 
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to create card',
+      error: "Internal Server Error",
+      message: "Failed to create card",
     });
   }
 };
@@ -81,13 +93,16 @@ export const createCard = async (req: Request, res: Response): Promise<void> => 
  * Получение всех карт пользователя
  * GET /api/v1/cards
  */
-export const getUserCards = async (req: Request, res: Response): Promise<void> => {
+export const getUserCards = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -95,7 +110,7 @@ export const getUserCards = async (req: Request, res: Response): Promise<void> =
     const cards = await cardService.getUserCards(req.user.userId);
 
     // Маскируем номера карт
-    const maskedCards = cards.map(card => ({
+    const maskedCards = cards.map((card) => ({
       ...card,
       card_number_masked: maskCardNumber(card.card_number),
       card_number: undefined,
@@ -107,12 +122,12 @@ export const getUserCards = async (req: Request, res: Response): Promise<void> =
       data: maskedCards,
     });
   } catch (error) {
-    logger.error('Get user cards controller error:', error);
-    
+    logger.error("Get user cards controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get cards',
+      error: "Internal Server Error",
+      message: "Failed to get cards",
     });
   }
 };
@@ -121,13 +136,16 @@ export const getUserCards = async (req: Request, res: Response): Promise<void> =
  * Получение карты по ID
  * GET /api/v1/cards/:cardId
  */
-export const getCardById = async (req: Request, res: Response): Promise<void> => {
+export const getCardById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -136,12 +154,12 @@ export const getCardById = async (req: Request, res: Response): Promise<void> =>
 
     // Проверяем принадлежность карты
     const isOwner = await cardService.isCardOwner(cardId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this card',
+        error: "Forbidden",
+        message: "You do not have access to this card",
       });
       return;
     }
@@ -151,8 +169,8 @@ export const getCardById = async (req: Request, res: Response): Promise<void> =>
     if (!card) {
       res.status(404).json({
         success: false,
-        error: 'Not Found',
-        message: 'Card not found',
+        error: "Not Found",
+        message: "Card not found",
       });
       return;
     }
@@ -170,12 +188,12 @@ export const getCardById = async (req: Request, res: Response): Promise<void> =>
       data: responseCard,
     });
   } catch (error) {
-    logger.error('Get card by ID controller error:', error);
-    
+    logger.error("Get card by ID controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get card',
+      error: "Internal Server Error",
+      message: "Failed to get card",
     });
   }
 };
@@ -189,8 +207,8 @@ export const blockCard = async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -200,12 +218,12 @@ export const blockCard = async (req: Request, res: Response): Promise<void> => {
 
     // Проверяем принадлежность карты
     const isOwner = await cardService.isCardOwner(cardId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this card',
+        error: "Forbidden",
+        message: "You do not have access to this card",
       });
       return;
     }
@@ -214,15 +232,15 @@ export const blockCard = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({
       success: true,
-      message: 'Card blocked successfully',
+      message: "Card blocked successfully",
     });
   } catch (error) {
-    logger.error('Block card controller error:', error);
-    
+    logger.error("Block card controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to block card',
+      error: "Internal Server Error",
+      message: "Failed to block card",
     });
   }
 };
@@ -231,13 +249,16 @@ export const blockCard = async (req: Request, res: Response): Promise<void> => {
  * Разблокировка карты
  * POST /api/v1/cards/:cardId/unblock
  */
-export const unblockCard = async (req: Request, res: Response): Promise<void> => {
+export const unblockCard = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -246,12 +267,12 @@ export const unblockCard = async (req: Request, res: Response): Promise<void> =>
 
     // Проверяем принадлежность карты
     const isOwner = await cardService.isCardOwner(cardId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this card',
+        error: "Forbidden",
+        message: "You do not have access to this card",
       });
       return;
     }
@@ -260,15 +281,15 @@ export const unblockCard = async (req: Request, res: Response): Promise<void> =>
 
     res.status(200).json({
       success: true,
-      message: 'Card unblocked successfully',
+      message: "Card unblocked successfully",
     });
   } catch (error) {
-    logger.error('Unblock card controller error:', error);
-    
+    logger.error("Unblock card controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to unblock card',
+      error: "Internal Server Error",
+      message: "Failed to unblock card",
     });
   }
 };
@@ -277,13 +298,16 @@ export const unblockCard = async (req: Request, res: Response): Promise<void> =>
  * Отметить карту как утерянную
  * POST /api/v1/cards/:cardId/report-lost
  */
-export const reportCardLost = async (req: Request, res: Response): Promise<void> => {
+export const reportCardLost = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -292,12 +316,12 @@ export const reportCardLost = async (req: Request, res: Response): Promise<void>
 
     // Проверяем принадлежность карты
     const isOwner = await cardService.isCardOwner(cardId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this card',
+        error: "Forbidden",
+        message: "You do not have access to this card",
       });
       return;
     }
@@ -306,15 +330,15 @@ export const reportCardLost = async (req: Request, res: Response): Promise<void>
 
     res.status(200).json({
       success: true,
-      message: 'Card reported as lost. Please order a new card.',
+      message: "Card reported as lost. Please order a new card.",
     });
   } catch (error) {
-    logger.error('Report card lost controller error:', error);
-    
+    logger.error("Report card lost controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to report card as lost',
+      error: "Internal Server Error",
+      message: "Failed to report card as lost",
     });
   }
 };
@@ -323,13 +347,16 @@ export const reportCardLost = async (req: Request, res: Response): Promise<void>
  * Обновление лимитов карты
  * PATCH /api/v1/cards/:cardId/limits
  */
-export const updateCardLimits = async (req: Request, res: Response): Promise<void> => {
+export const updateCardLimits = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -339,12 +366,12 @@ export const updateCardLimits = async (req: Request, res: Response): Promise<voi
 
     // Проверяем принадлежность карты
     const isOwner = await cardService.isCardOwner(cardId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this card',
+        error: "Forbidden",
+        message: "You do not have access to this card",
       });
       return;
     }
@@ -353,15 +380,15 @@ export const updateCardLimits = async (req: Request, res: Response): Promise<voi
 
     res.status(200).json({
       success: true,
-      message: 'Card limits updated successfully',
+      message: "Card limits updated successfully",
     });
   } catch (error) {
-    logger.error('Update card limits controller error:', error);
-    
+    logger.error("Update card limits controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Update Failed',
+        error: "Update Failed",
         message: error.message,
       });
       return;
@@ -369,8 +396,8 @@ export const updateCardLimits = async (req: Request, res: Response): Promise<voi
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to update card limits',
+      error: "Internal Server Error",
+      message: "Failed to update card limits",
     });
   }
 };
@@ -379,13 +406,16 @@ export const updateCardLimits = async (req: Request, res: Response): Promise<voi
  * Включение/выключение бесконтактных платежей
  * PATCH /api/v1/cards/:cardId/contactless
  */
-export const toggleContactless = async (req: Request, res: Response): Promise<void> => {
+export const toggleContactless = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -395,12 +425,12 @@ export const toggleContactless = async (req: Request, res: Response): Promise<vo
 
     // Проверяем принадлежность карты
     const isOwner = await cardService.isCardOwner(cardId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this card',
+        error: "Forbidden",
+        message: "You do not have access to this card",
       });
       return;
     }
@@ -409,15 +439,15 @@ export const toggleContactless = async (req: Request, res: Response): Promise<vo
 
     res.status(200).json({
       success: true,
-      message: `Contactless payments ${enabled ? 'enabled' : 'disabled'} successfully`,
+      message: `Contactless payments ${enabled ? "enabled" : "disabled"} successfully`,
     });
   } catch (error) {
-    logger.error('Toggle contactless controller error:', error);
-    
+    logger.error("Toggle contactless controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to toggle contactless payments',
+      error: "Internal Server Error",
+      message: "Failed to toggle contactless payments",
     });
   }
 };
@@ -426,13 +456,16 @@ export const toggleContactless = async (req: Request, res: Response): Promise<vo
  * Включение/выключение онлайн платежей
  * PATCH /api/v1/cards/:cardId/online-payments
  */
-export const toggleOnlinePayments = async (req: Request, res: Response): Promise<void> => {
+export const toggleOnlinePayments = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -442,12 +475,12 @@ export const toggleOnlinePayments = async (req: Request, res: Response): Promise
 
     // Проверяем принадлежность карты
     const isOwner = await cardService.isCardOwner(cardId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this card',
+        error: "Forbidden",
+        message: "You do not have access to this card",
       });
       return;
     }
@@ -456,15 +489,15 @@ export const toggleOnlinePayments = async (req: Request, res: Response): Promise
 
     res.status(200).json({
       success: true,
-      message: `Online payments ${enabled ? 'enabled' : 'disabled'} successfully`,
+      message: `Online payments ${enabled ? "enabled" : "disabled"} successfully`,
     });
   } catch (error) {
-    logger.error('Toggle online payments controller error:', error);
-    
+    logger.error("Toggle online payments controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to toggle online payments',
+      error: "Internal Server Error",
+      message: "Failed to toggle online payments",
     });
   }
 };

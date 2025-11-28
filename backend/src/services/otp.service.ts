@@ -1,19 +1,19 @@
-import { query, getClient } from '../config/database';
-import { generateOTP, getOTPExpiry, isExpired } from '../utils/generators';
-import { Vonage } from '@vonage/server-sdk';
-import logger from '../utils/logger';
+import { query, getClient } from "../config/database";
+import { generateOTP, getOTPExpiry, isExpired } from "../utils/generators";
+import { Vonage } from "@vonage/server-sdk";
+import logger from "../utils/logger";
 
 const vonage = new Vonage({
   apiKey: "bc643e17",
-  apiSecret: "PHY5Jw6nsNx*mZO9Du$zSvT" // if you want to manage your secret, please do so by visiting your API Settings page in your dashboard
-})
+  apiSecret: "PHY5Jw6nsNx*mZO9Du$zSvT", // if you want to manage your secret, please do so by visiting your API Settings page in your dashboard
+});
 
 interface OTPCode {
   id: string;
   user_id: string;
   code: string;
-  type: 'sms' | 'email' | '2fa';
-  purpose: 'login' | 'registration' | 'password_reset' | 'transaction';
+  type: "sms" | "email" | "2fa";
+  purpose: "login" | "registration" | "password_reset" | "transaction";
   expires_at: Date;
   is_used: boolean;
   created_at: Date;
@@ -24,14 +24,14 @@ interface OTPCode {
  */
 export const createOTP = async (
   userId: string,
-  type: 'sms' | 'email' | '2fa',
-  purpose: 'login' | 'registration' | 'password_reset' | 'transaction',
+  type: "sms" | "email" | "2fa",
+  purpose: "login" | "registration" | "password_reset" | "transaction",
   expiryMinutes: number = 5
 ): Promise<string> => {
   const client = await getClient();
-  
+
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Генерируем код
     const code = generateOTP(6);
@@ -53,19 +53,19 @@ export const createOTP = async (
       [userId, code, type, purpose, expiresAt]
     );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
-    logger.info('OTP code created', { 
-      userId, 
-      type, 
+    logger.info("OTP code created", {
+      userId,
+      type,
       purpose,
-      expiresIn: `${expiryMinutes} minutes`
+      expiresIn: `${expiryMinutes} minutes`,
     });
 
     return code;
   } catch (error) {
-    await client.query('ROLLBACK');
-    logger.error('Error creating OTP code:', error);
+    await client.query("ROLLBACK");
+    logger.error("Error creating OTP code:", error);
     throw error;
   } finally {
     client.release();
@@ -78,12 +78,12 @@ export const createOTP = async (
 export const verifyOTP = async (
   userId: string,
   code: string,
-  purpose: 'login' | 'registration' | 'password_reset' | 'transaction'
+  purpose: "login" | "registration" | "password_reset" | "transaction"
 ): Promise<boolean> => {
   const client = await getClient();
-  
+
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Получаем код из БД
     const result = await client.query(
@@ -98,8 +98,8 @@ export const verifyOTP = async (
     );
 
     if (result.rows.length === 0) {
-      logger.warn('OTP code not found or already used', { userId, purpose });
-      await client.query('ROLLBACK');
+      logger.warn("OTP code not found or already used", { userId, purpose });
+      await client.query("ROLLBACK");
       return false;
     }
 
@@ -107,25 +107,24 @@ export const verifyOTP = async (
 
     // Проверяем срок действия
     if (isExpired(otpRecord.expires_at)) {
-      logger.warn('OTP code expired', { userId, purpose });
-      await client.query('ROLLBACK');
+      logger.warn("OTP code expired", { userId, purpose });
+      await client.query("ROLLBACK");
       return false;
     }
 
     // Помечаем код как использованный
-    await client.query(
-      'UPDATE otp_codes SET is_used = true WHERE id = $1',
-      [otpRecord.id]
-    );
+    await client.query("UPDATE otp_codes SET is_used = true WHERE id = $1", [
+      otpRecord.id,
+    ]);
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
-    logger.info('OTP code verified successfully', { userId, purpose });
+    logger.info("OTP code verified successfully", { userId, purpose });
 
     return true;
   } catch (error) {
-    await client.query('ROLLBACK');
-    logger.error('Error verifying OTP code:', error);
+    await client.query("ROLLBACK");
+    logger.error("Error verifying OTP code:", error);
     throw error;
   } finally {
     client.release();
@@ -137,7 +136,7 @@ export const verifyOTP = async (
  */
 export const hasValidOTP = async (
   userId: string,
-  purpose: 'login' | 'registration' | 'password_reset' | 'transaction'
+  purpose: "login" | "registration" | "password_reset" | "transaction"
 ): Promise<boolean> => {
   try {
     const result = await query(
@@ -153,7 +152,7 @@ export const hasValidOTP = async (
 
     return result.rows.length > 0;
   } catch (error) {
-    logger.error('Error checking valid OTP:', error);
+    logger.error("Error checking valid OTP:", error);
     throw error;
   }
 };
@@ -163,7 +162,7 @@ export const hasValidOTP = async (
  */
 export const getOTPTimeRemaining = async (
   userId: string,
-  purpose: 'login' | 'registration' | 'password_reset' | 'transaction'
+  purpose: "login" | "registration" | "password_reset" | "transaction"
 ): Promise<number | null> => {
   try {
     const result = await query(
@@ -183,11 +182,13 @@ export const getOTPTimeRemaining = async (
 
     const expiresAt = new Date(result.rows[0].expires_at);
     const now = new Date();
-    const remainingSeconds = Math.floor((expiresAt.getTime() - now.getTime()) / 1000);
+    const remainingSeconds = Math.floor(
+      (expiresAt.getTime() - now.getTime()) / 1000
+    );
 
     return remainingSeconds > 0 ? remainingSeconds : 0;
   } catch (error) {
-    logger.error('Error getting OTP time remaining:', error);
+    logger.error("Error getting OTP time remaining:", error);
     throw error;
   }
 };
@@ -197,14 +198,11 @@ export const getOTPTimeRemaining = async (
  */
 export const deleteUserOTPs = async (userId: string): Promise<void> => {
   try {
-    await query(
-      'DELETE FROM otp_codes WHERE user_id = $1',
-      [userId]
-    );
+    await query("DELETE FROM otp_codes WHERE user_id = $1", [userId]);
 
-    logger.info('All OTP codes deleted for user', { userId });
+    logger.info("All OTP codes deleted for user", { userId });
   } catch (error) {
-    logger.error('Error deleting user OTPs:', error);
+    logger.error("Error deleting user OTPs:", error);
     throw error;
   }
 };
@@ -215,18 +213,18 @@ export const deleteUserOTPs = async (userId: string): Promise<void> => {
 export const cleanupExpiredOTPs = async (): Promise<number> => {
   try {
     const result = await query(
-      'DELETE FROM otp_codes WHERE expires_at < CURRENT_TIMESTAMP'
+      "DELETE FROM otp_codes WHERE expires_at < CURRENT_TIMESTAMP"
     );
 
     const deletedCount = result.rowCount || 0;
 
     if (deletedCount > 0) {
-      logger.info('Expired OTP codes cleaned up', { count: deletedCount });
+      logger.info("Expired OTP codes cleaned up", { count: deletedCount });
     }
 
     return deletedCount;
   } catch (error) {
-    logger.error('Error cleaning up expired OTPs:', error);
+    logger.error("Error cleaning up expired OTPs:", error);
     throw error;
   }
 };
@@ -234,28 +232,33 @@ export const cleanupExpiredOTPs = async (): Promise<number> => {
 /**
  * Отправка OTP по SMS (заглушка, будет реализовано позже)
  */
-export const sendOTPviaSMS = async (phone: string, code: string): Promise<boolean> => {
+export const sendOTPviaSMS = async (
+  phone: string,
+  code: string
+): Promise<boolean> => {
   try {
     // TODO: Интеграция с SMS провайдером (Twilio, AWS SNS и т.д.)
-    logger.info('OTP SMS would be sent', { 
-      phone: phone.replace(/\d(?=\d{4})/g, '*'),
-      code: '******' // Не логируем реальный код в production
+    logger.info("OTP SMS would be sent", {
+      phone: phone.replace(/\d(?=\d{4})/g, "*"),
+      code: "******", // Не логируем реальный код в production
     });
 
-    await vonage.sms.send({
-      to: phone,
+    const res = await vonage.sms.send({
+      to: "87075458543",
       from: "BankingSuperApp",
-      text: `Код подтверждения: ${code}`
+      text: `Код подтверждения: ${code}`,
     });
+
+    console.log("SMS send response:", res);
 
     // В режиме разработки просто логируем
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug('OTP Code (dev only):', { code });
+    if (process.env.NODE_ENV === "development") {
+      logger.debug("OTP Code (dev only):", { code });
     }
 
     return true;
   } catch (error) {
-    logger.error('Error sending OTP via SMS:', error);
+    logger.error("Error sending OTP via SMS:", error);
     return false;
   }
 };
@@ -263,22 +266,25 @@ export const sendOTPviaSMS = async (phone: string, code: string): Promise<boolea
 /**
  * Отправка OTP по Email (заглушка, будет реализовано позже)
  */
-export const sendOTPviaEmail = async (email: string, code: string): Promise<boolean> => {
+export const sendOTPviaEmail = async (
+  email: string,
+  code: string
+): Promise<boolean> => {
   try {
     // TODO: Интеграция с Email провайдером (SendGrid, AWS SES и т.д.)
-    logger.info('OTP Email would be sent', { 
-      email: email.replace(/(.{2}).*(@.*)/, '$1***$2'),
-      code: '******' // Не логируем реальный код в production
+    logger.info("OTP Email would be sent", {
+      email: email.replace(/(.{2}).*(@.*)/, "$1***$2"),
+      code: "******", // Не логируем реальный код в production
     });
 
     // В режиме разработки просто логируем
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug('OTP Code (dev only):', { code });
+    if (process.env.NODE_ENV === "development") {
+      logger.debug("OTP Code (dev only):", { code });
     }
 
     return true;
   } catch (error) {
-    logger.error('Error sending OTP via Email:', error);
+    logger.error("Error sending OTP via Email:", error);
     return false;
   }
 };

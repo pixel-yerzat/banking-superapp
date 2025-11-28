@@ -1,16 +1,17 @@
-import { query, getClient } from '../config/database';
-import { 
-  Transaction, 
-  CreateTransactionDto, 
-  TransactionType, 
+import { query, getClient } from "../config/database";
+import {
+  Transaction,
+  CreateTransactionDto,
+  TransactionType,
   TransactionStatus,
   Currency,
   PaginationQuery,
-  PaginatedResponse 
-} from '../types';
-import { generateReferenceNumber } from '../utils/generators';
-import { updateAccountBalance, getAccountById } from './account.service';
-import logger from '../utils/logger';
+  PaginatedResponse,
+} from "../types";
+import { generateReferenceNumber } from "../utils/generators";
+import { updateAccountBalance, getAccountById } from "./account.service";
+import logger from "../utils/logger";
+import { log } from "console";
 
 /**
  * Создание транзакции с обновлением балансов
@@ -19,10 +20,11 @@ export const createTransaction = async (
   transactionData: CreateTransactionDto
 ): Promise<Transaction> => {
   const client = await getClient();
-  
-  try {
-    await client.query('BEGIN');
 
+  try {
+    await client.query("BEGIN");
+
+    logger.info("Creating transaction", { transactionData });
     // Генерируем уникальный референс
     const referenceNumber = generateReferenceNumber();
 
@@ -30,20 +32,21 @@ export const createTransaction = async (
     if (transactionData.from_account_id) {
       const fromAccount = await getAccountById(transactionData.from_account_id);
       if (!fromAccount) {
-        throw new Error('Source account not found');
+        throw new Error("Source account not found");
       }
-      if (fromAccount.status !== 'active') {
-        throw new Error('Source account is not active');
+      if (fromAccount.status !== "active") {
+        throw new Error("Source account is not active");
       }
     }
 
+    logger.info("From account verified");
     if (transactionData.to_account_id) {
       const toAccount = await getAccountById(transactionData.to_account_id);
       if (!toAccount) {
-        throw new Error('Destination account not found');
+        throw new Error("Destination account not found");
       }
-      if (toAccount.status !== 'active') {
-        throw new Error('Destination account is not active');
+      if (toAccount.status !== "active") {
+        throw new Error("Destination account is not active");
       }
     }
 
@@ -66,12 +69,19 @@ export const createTransaction = async (
         TransactionStatus.PENDING,
         transactionData.description || null,
         referenceNumber,
-        transactionData.metadata ? JSON.stringify(transactionData.metadata) : null
+        transactionData.metadata
+          ? JSON.stringify(transactionData.metadata)
+          : null,
       ]
     );
 
+    logger.info("Transaction record created");
+
     const transaction = result.rows[0];
 
+    logger.info("Processing account balance updates", {
+      transactionId: transaction.id,
+    });
     // Обновляем балансы счетов
     if (transactionData.from_account_id) {
       await updateAccountBalance(
@@ -79,6 +89,7 @@ export const createTransaction = async (
         transactionData.amount,
         true // списание
       );
+      logger.info("Debited from_account_id");
     }
 
     if (transactionData.to_account_id) {
@@ -96,36 +107,40 @@ export const createTransaction = async (
        WHERE id = $2`,
       [TransactionStatus.COMPLETED, transaction.id]
     );
+    logger.info("Account balances updated");
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
-    logger.info('Transaction completed', { 
+    logger.info("Transaction completed", {
       transactionId: transaction.id,
       type: transactionData.transaction_type,
       amount: transactionData.amount,
-      currency: transactionData.currency
+      currency: transactionData.currency,
     });
 
     // Возвращаем обновленную транзакцию
     const updatedResult = await query(
-      'SELECT * FROM transactions WHERE id = $1',
+      "SELECT * FROM transactions WHERE id = $1",
       [transaction.id]
     );
 
     return updatedResult.rows[0];
   } catch (error) {
-    await client.query('ROLLBACK');
-    
+    await client.query("ROLLBACK");
+
     // Пытаемся отметить транзакцию как failed если она была создана
     try {
-      if (error instanceof Error && error.message.includes('Insufficient funds')) {
-        logger.warn('Transaction failed due to insufficient funds');
+      if (
+        error instanceof Error &&
+        error.message.includes("Insufficient funds")
+      ) {
+        logger.warn("Transaction failed due to insufficient funds");
       }
     } catch (e) {
       // Игнорируем ошибки при обновлении статуса
     }
 
-    logger.error('Error creating transaction:', error);
+    logger.error("Error creating transaction:", error);
     throw error;
   } finally {
     client.release();
@@ -145,12 +160,13 @@ export const transferToPhone = async (
   try {
     // Находим получателя по телефону
     const recipientResult = await query(
-      'SELECT id FROM users WHERE phone = $1',
+      "SELECT id FROM users WHERE phone = $1",
       [toPhone]
     );
+    logger.info("Recipient lookup result", { rows: recipientResult.rows });
 
     if (recipientResult.rows.length === 0) {
-      throw new Error('Recipient not found');
+      throw new Error("Recipient not found");
     }
 
     const recipientUserId = recipientResult.rows[0].id;
@@ -158,7 +174,7 @@ export const transferToPhone = async (
     // Находим активный счет получателя в той же валюте
     const fromAccount = await getAccountById(fromAccountId);
     if (!fromAccount) {
-      throw new Error('Source account not found');
+      throw new Error("Source account not found");
     }
 
     const recipientAccountResult = await query(
@@ -171,13 +187,15 @@ export const transferToPhone = async (
     );
 
     if (recipientAccountResult.rows.length === 0) {
-      throw new Error(`Recipient does not have an active ${fromAccount.currency} account`);
+      throw new Error(
+        `Recipient does not have an active ${fromAccount.currency} account`
+      );
     }
-
+    logger.info("Recipient account lookup result", {
+      rows: recipientAccountResult.rows,
+    });
     const toAccountId = recipientAccountResult.rows[0].id;
-
-    // Создаем транзакцию
-    return await createTransaction({
+    const data = await createTransaction({
       from_account_id: fromAccountId,
       to_account_id: toAccountId,
       transaction_type: TransactionType.TRANSFER,
@@ -186,11 +204,14 @@ export const transferToPhone = async (
       description: description || `Transfer to ${toPhone}`,
       metadata: {
         recipient_phone: toPhone,
-        transfer_type: 'p2p_phone'
-      }
+        transfer_type: "p2p_phone",
+      },
     });
+    logger.info("Transaction data:", data);
+    // Создаем транзакцию
+    return;
   } catch (error) {
-    logger.error('Error in P2P transfer to phone:', error);
+    logger.error("Error in P2P transfer to phone:", error);
     throw error;
   }
 };
@@ -207,28 +228,30 @@ export const transferToAccount = async (
   try {
     // Находим счет получателя
     const toAccountResult = await query(
-      'SELECT id, currency, status FROM accounts WHERE account_number = $1',
+      "SELECT id, currency, status FROM accounts WHERE account_number = $1",
       [toAccountNumber]
     );
 
     if (toAccountResult.rows.length === 0) {
-      throw new Error('Destination account not found');
+      throw new Error("Destination account not found");
     }
 
     const toAccount = toAccountResult.rows[0];
 
-    if (toAccount.status !== 'active') {
-      throw new Error('Destination account is not active');
+    if (toAccount.status !== "active") {
+      throw new Error("Destination account is not active");
     }
 
     // Проверяем валюту счета отправителя
     const fromAccount = await getAccountById(fromAccountId);
     if (!fromAccount) {
-      throw new Error('Source account not found');
+      throw new Error("Source account not found");
     }
 
     if (fromAccount.currency !== toAccount.currency) {
-      throw new Error('Currency mismatch. Cross-currency transfers not yet supported.');
+      throw new Error(
+        "Currency mismatch. Cross-currency transfers not yet supported."
+      );
     }
 
     // Создаем транзакцию
@@ -241,11 +264,11 @@ export const transferToAccount = async (
       description: description || `Transfer to ${toAccountNumber}`,
       metadata: {
         recipient_account: toAccountNumber,
-        transfer_type: 'p2p_account'
-      }
+        transfer_type: "p2p_account",
+      },
     });
   } catch (error) {
-    logger.error('Error in P2P transfer to account:', error);
+    logger.error("Error in P2P transfer to account:", error);
     throw error;
   }
 };
@@ -257,10 +280,9 @@ export const getTransactionById = async (
   transactionId: string
 ): Promise<Transaction | null> => {
   try {
-    const result = await query(
-      'SELECT * FROM transactions WHERE id = $1',
-      [transactionId]
-    );
+    const result = await query("SELECT * FROM transactions WHERE id = $1", [
+      transactionId,
+    ]);
 
     if (result.rows.length === 0) {
       return null;
@@ -268,7 +290,7 @@ export const getTransactionById = async (
 
     return result.rows[0];
   } catch (error) {
-    logger.error('Error getting transaction by ID:', error);
+    logger.error("Error getting transaction by ID:", error);
     throw error;
   }
 };
@@ -308,10 +330,10 @@ export const getAccountTransactions = async (
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   } catch (error) {
-    logger.error('Error getting account transactions:', error);
+    logger.error("Error getting account transactions:", error);
     throw error;
   }
 };
@@ -354,10 +376,10 @@ export const getUserTransactions = async (
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   } catch (error) {
-    logger.error('Error getting user transactions:', error);
+    logger.error("Error getting user transactions:", error);
     throw error;
   }
 };
@@ -365,40 +387,42 @@ export const getUserTransactions = async (
 /**
  * Отмена транзакции (только для pending транзакций)
  */
-export const cancelTransaction = async (transactionId: string): Promise<void> => {
+export const cancelTransaction = async (
+  transactionId: string
+): Promise<void> => {
   const client = await getClient();
-  
+
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     // Получаем транзакцию
     const result = await client.query(
-      'SELECT * FROM transactions WHERE id = $1',
+      "SELECT * FROM transactions WHERE id = $1",
       [transactionId]
     );
 
     if (result.rows.length === 0) {
-      throw new Error('Transaction not found');
+      throw new Error("Transaction not found");
     }
 
     const transaction = result.rows[0];
 
     if (transaction.status !== TransactionStatus.PENDING) {
-      throw new Error('Only pending transactions can be cancelled');
+      throw new Error("Only pending transactions can be cancelled");
     }
 
     // Обновляем статус
-    await client.query(
-      'UPDATE transactions SET status = $1 WHERE id = $2',
-      [TransactionStatus.CANCELLED, transactionId]
-    );
+    await client.query("UPDATE transactions SET status = $1 WHERE id = $2", [
+      TransactionStatus.CANCELLED,
+      transactionId,
+    ]);
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
-    logger.info('Transaction cancelled', { transactionId });
+    logger.info("Transaction cancelled", { transactionId });
   } catch (error) {
-    await client.query('ROLLBACK');
-    logger.error('Error cancelling transaction:', error);
+    await client.query("ROLLBACK");
+    logger.error("Error cancelling transaction:", error);
     throw error;
   } finally {
     client.release();
@@ -420,11 +444,11 @@ export const getUserTransactionStats = async (
   by_currency: { [key: string]: number };
 }> => {
   try {
-    let dateFilter = '';
+    let dateFilter = "";
     const params: any[] = [userId];
 
     if (startDate && endDate) {
-      dateFilter = 'AND t.created_at BETWEEN $2 AND $3';
+      dateFilter = "AND t.created_at BETWEEN $2 AND $3";
       params.push(startDate, endDate);
     }
 
@@ -488,10 +512,10 @@ export const getUserTransactionStats = async (
       total_sent: parseFloat(statsResult.rows[0].total_sent) || 0,
       total_received: parseFloat(statsResult.rows[0].total_received) || 0,
       by_type: byType,
-      by_currency: byCurrency
+      by_currency: byCurrency,
     };
   } catch (error) {
-    logger.error('Error getting transaction stats:', error);
+    logger.error("Error getting transaction stats:", error);
     throw error;
   }
 };

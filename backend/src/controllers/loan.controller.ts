@@ -1,22 +1,26 @@
-import { Request, Response } from 'express';
-import * as loanService from '../services/loan.service';
-import * as accountService from '../services/account.service';
-import { LoanType } from '../types';
-import logger from '../utils/logger';
+import { Request, Response } from "express";
+import * as loanService from "../services/loan.service";
+import * as accountService from "../services/account.service";
+import { LoanType } from "../types";
+import logger from "../utils/logger";
 
 /**
  * Калькулятор кредита
  * POST /api/v1/loans/calculate
  */
-export const calculateLoan = async (req: Request, res: Response): Promise<void> => {
+export const calculateLoan = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { principal_amount, interest_rate, term_months } = req.body;
 
     if (!principal_amount || !interest_rate || !term_months) {
       res.status(400).json({
         success: false,
-        error: 'Bad Request',
-        message: 'principal_amount, interest_rate, and term_months are required',
+        error: "Bad Request",
+        message:
+          "principal_amount, interest_rate, and term_months are required",
       });
       return;
     }
@@ -32,12 +36,12 @@ export const calculateLoan = async (req: Request, res: Response): Promise<void> 
       data: calculation,
     });
   } catch (error) {
-    logger.error('Calculate loan controller error:', error);
-    
+    logger.error("Calculate loan controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to calculate loan',
+      error: "Internal Server Error",
+      message: "Failed to calculate loan",
     });
   }
 };
@@ -46,18 +50,22 @@ export const calculateLoan = async (req: Request, res: Response): Promise<void> 
  * Создание заявки на кредит
  * POST /api/v1/loans
  */
-export const createLoanApplication = async (req: Request, res: Response): Promise<void> => {
+export const createLoanApplication = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
 
-    const { loan_type, principal_amount, interest_rate, term_months } = req.body;
+    const { loan_type, principal_amount, interest_rate, term_months } =
+      req.body;
 
     const loan = await loanService.createLoanApplication(req.user.userId, {
       loan_type,
@@ -68,16 +76,16 @@ export const createLoanApplication = async (req: Request, res: Response): Promis
 
     res.status(201).json({
       success: true,
-      message: 'Loan application submitted successfully',
+      message: "Loan application submitted successfully",
       data: loan,
     });
   } catch (error) {
-    logger.error('Create loan application controller error:', error);
-    
+    logger.error("Create loan application controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Application Failed',
+        error: "Application Failed",
         message: error.message,
       });
       return;
@@ -85,8 +93,8 @@ export const createLoanApplication = async (req: Request, res: Response): Promis
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to create loan application',
+      error: "Internal Server Error",
+      message: "Failed to create loan application",
     });
   }
 };
@@ -95,13 +103,16 @@ export const createLoanApplication = async (req: Request, res: Response): Promis
  * Получение всех кредитов пользователя
  * GET /api/v1/loans
  */
-export const getUserLoans = async (req: Request, res: Response): Promise<void> => {
+export const getUserLoans = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -113,12 +124,12 @@ export const getUserLoans = async (req: Request, res: Response): Promise<void> =
       data: loans,
     });
   } catch (error) {
-    logger.error('Get user loans controller error:', error);
-    
+    logger.error("Get user loans controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get loans',
+      error: "Internal Server Error",
+      message: "Failed to get loans",
     });
   }
 };
@@ -127,13 +138,16 @@ export const getUserLoans = async (req: Request, res: Response): Promise<void> =
  * Получение кредита по ID
  * GET /api/v1/loans/:loanId
  */
-export const getLoanById = async (req: Request, res: Response): Promise<void> => {
+export const getLoanById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -142,12 +156,12 @@ export const getLoanById = async (req: Request, res: Response): Promise<void> =>
 
     // Проверяем принадлежность
     const isOwner = await loanService.isLoanOwner(loanId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this loan',
+        error: "Forbidden",
+        message: "You do not have access to this loan",
       });
       return;
     }
@@ -157,8 +171,8 @@ export const getLoanById = async (req: Request, res: Response): Promise<void> =>
     if (!loan) {
       res.status(404).json({
         success: false,
-        error: 'Not Found',
-        message: 'Loan not found',
+        error: "Not Found",
+        message: "Loan not found",
       });
       return;
     }
@@ -168,12 +182,12 @@ export const getLoanById = async (req: Request, res: Response): Promise<void> =>
       data: loan,
     });
   } catch (error) {
-    logger.error('Get loan by ID controller error:', error);
-    
+    logger.error("Get loan by ID controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get loan',
+      error: "Internal Server Error",
+      message: "Failed to get loan",
     });
   }
 };
@@ -182,13 +196,16 @@ export const getLoanById = async (req: Request, res: Response): Promise<void> =>
  * Получение графика платежей
  * GET /api/v1/loans/:loanId/schedule
  */
-export const getLoanSchedule = async (req: Request, res: Response): Promise<void> => {
+export const getLoanSchedule = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -197,12 +214,12 @@ export const getLoanSchedule = async (req: Request, res: Response): Promise<void
 
     // Проверяем принадлежность
     const isOwner = await loanService.isLoanOwner(loanId, req.user.userId);
-    
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this loan',
+        error: "Forbidden",
+        message: "You do not have access to this loan",
       });
       return;
     }
@@ -214,12 +231,12 @@ export const getLoanSchedule = async (req: Request, res: Response): Promise<void
       data: schedule,
     });
   } catch (error) {
-    logger.error('Get loan schedule controller error:', error);
-    
+    logger.error("Get loan schedule controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get payment schedule',
+      error: "Internal Server Error",
+      message: "Failed to get payment schedule",
     });
   }
 };
@@ -228,13 +245,16 @@ export const getLoanSchedule = async (req: Request, res: Response): Promise<void
  * Платеж по кредиту
  * POST /api/v1/loans/:loanId/pay
  */
-export const makeLoanPayment = async (req: Request, res: Response): Promise<void> => {
+export const makeLoanPayment = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -244,24 +264,27 @@ export const makeLoanPayment = async (req: Request, res: Response): Promise<void
 
     // Проверяем принадлежность кредита
     const isLoanOwner = await loanService.isLoanOwner(loanId, req.user.userId);
-    
+
     if (!isLoanOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this loan',
+        error: "Forbidden",
+        message: "You do not have access to this loan",
       });
       return;
     }
 
     // Проверяем принадлежность счета
-    const isAccountOwner = await accountService.isAccountOwner(account_id, req.user.userId);
-    
+    const isAccountOwner = await accountService.isAccountOwner(
+      account_id,
+      req.user.userId
+    );
+
     if (!isAccountOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -270,15 +293,15 @@ export const makeLoanPayment = async (req: Request, res: Response): Promise<void
 
     res.status(200).json({
       success: true,
-      message: 'Loan payment successful',
+      message: "Loan payment successful",
     });
   } catch (error) {
-    logger.error('Make loan payment controller error:', error);
-    
+    logger.error("Make loan payment controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Payment Failed',
+        error: "Payment Failed",
         message: error.message,
       });
       return;
@@ -286,8 +309,8 @@ export const makeLoanPayment = async (req: Request, res: Response): Promise<void
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to make loan payment',
+      error: "Internal Server Error",
+      message: "Failed to make loan payment",
     });
   }
 };
@@ -296,13 +319,16 @@ export const makeLoanPayment = async (req: Request, res: Response): Promise<void
  * Досрочное погашение кредита
  * POST /api/v1/loans/:loanId/early-repay
  */
-export const earlyRepayment = async (req: Request, res: Response): Promise<void> => {
+export const earlyRepayment = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -312,24 +338,27 @@ export const earlyRepayment = async (req: Request, res: Response): Promise<void>
 
     // Проверяем принадлежность кредита
     const isLoanOwner = await loanService.isLoanOwner(loanId, req.user.userId);
-    
+
     if (!isLoanOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this loan',
+        error: "Forbidden",
+        message: "You do not have access to this loan",
       });
       return;
     }
 
     // Проверяем принадлежность счета
-    const isAccountOwner = await accountService.isAccountOwner(account_id, req.user.userId);
-    
+    const isAccountOwner = await accountService.isAccountOwner(
+      account_id,
+      req.user.userId
+    );
+
     if (!isAccountOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -338,15 +367,15 @@ export const earlyRepayment = async (req: Request, res: Response): Promise<void>
 
     res.status(200).json({
       success: true,
-      message: 'Loan fully repaid successfully',
+      message: "Loan fully repaid successfully",
     });
   } catch (error) {
-    logger.error('Early repayment controller error:', error);
-    
+    logger.error("Early repayment controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Repayment Failed',
+        error: "Repayment Failed",
         message: error.message,
       });
       return;
@@ -354,8 +383,8 @@ export const earlyRepayment = async (req: Request, res: Response): Promise<void>
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to complete early repayment',
+      error: "Internal Server Error",
+      message: "Failed to complete early repayment",
     });
   }
 };
@@ -364,13 +393,16 @@ export const earlyRepayment = async (req: Request, res: Response): Promise<void>
  * Статистика по кредитам
  * GET /api/v1/loans/stats
  */
-export const getLoanStats = async (req: Request, res: Response): Promise<void> => {
+export const getLoanStats = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -382,12 +414,12 @@ export const getLoanStats = async (req: Request, res: Response): Promise<void> =
       data: stats,
     });
   } catch (error) {
-    logger.error('Get loan stats controller error:', error);
-    
+    logger.error("Get loan stats controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get loan statistics',
+      error: "Internal Server Error",
+      message: "Failed to get loan statistics",
     });
   }
 };
@@ -396,13 +428,16 @@ export const getLoanStats = async (req: Request, res: Response): Promise<void> =
  * Одобрение кредита (только для админа, но для демо доступно всем)
  * POST /api/v1/loans/:loanId/approve
  */
-export const approveLoan = async (req: Request, res: Response): Promise<void> => {
+export const approveLoan = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -412,12 +447,12 @@ export const approveLoan = async (req: Request, res: Response): Promise<void> =>
 
     // Проверяем принадлежность кредита (для демо)
     const isLoanOwner = await loanService.isLoanOwner(loanId, req.user.userId);
-    
+
     if (!isLoanOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this loan',
+        error: "Forbidden",
+        message: "You do not have access to this loan",
       });
       return;
     }
@@ -426,16 +461,16 @@ export const approveLoan = async (req: Request, res: Response): Promise<void> =>
 
     res.status(200).json({
       success: true,
-      message: 'Loan approved and funds disbursed',
+      message: "Loan approved and funds disbursed",
       data: loan,
     });
   } catch (error) {
-    logger.error('Approve loan controller error:', error);
-    
+    logger.error("Approve loan controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Approval Failed',
+        error: "Approval Failed",
         message: error.message,
       });
       return;
@@ -443,8 +478,8 @@ export const approveLoan = async (req: Request, res: Response): Promise<void> =>
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to approve loan',
+      error: "Internal Server Error",
+      message: "Failed to approve loan",
     });
   }
 };

@@ -1,20 +1,23 @@
-import { Request, Response } from 'express';
-import * as transactionService from '../services/transaction.service';
-import * as accountService from '../services/account.service';
-import { CreateTransactionDto, PaginationQuery } from '../types';
-import logger from '../utils/logger';
+import { Request, Response } from "express";
+import * as transactionService from "../services/transaction.service";
+import * as accountService from "../services/account.service";
+import { CreateTransactionDto, PaginationQuery } from "../types";
+import logger from "../utils/logger";
 
 /**
  * Создание транзакции
  * POST /api/v1/transactions
  */
-export const createTransaction = async (req: Request, res: Response): Promise<void> => {
+export const createTransaction = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -27,31 +30,32 @@ export const createTransaction = async (req: Request, res: Response): Promise<vo
         transactionData.from_account_id,
         req.user.userId
       );
-      
+
       if (!isOwner) {
         res.status(403).json({
           success: false,
-          error: 'Forbidden',
-          message: 'You do not have access to the source account',
+          error: "Forbidden",
+          message: "You do not have access to the source account",
         });
         return;
       }
     }
 
-    const transaction = await transactionService.createTransaction(transactionData);
+    const transaction =
+      await transactionService.createTransaction(transactionData);
 
     res.status(201).json({
       success: true,
-      message: 'Transaction completed successfully',
+      message: "Transaction completed successfully",
       data: transaction,
     });
   } catch (error) {
-    logger.error('Create transaction controller error:', error);
-    
+    logger.error("Create transaction controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Transaction Failed',
+        error: "Transaction Failed",
         message: error.message,
       });
       return;
@@ -59,8 +63,8 @@ export const createTransaction = async (req: Request, res: Response): Promise<vo
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to create transaction',
+      error: "Internal Server Error",
+      message: "Failed to create transaction",
     });
   }
 };
@@ -69,13 +73,17 @@ export const createTransaction = async (req: Request, res: Response): Promise<vo
  * Перевод по номеру телефона
  * POST /api/v1/transactions/transfer/phone
  */
-export const transferToPhone = async (req: Request, res: Response): Promise<void> => {
+export const transferToPhone = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  logger.info("Transfer to phone request body:", req.body);
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -83,16 +91,20 @@ export const transferToPhone = async (req: Request, res: Response): Promise<void
     const { from_account_id, to_phone, amount, description } = req.body;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(from_account_id, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      from_account_id,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
+    logger.info("Is owner of from_account_id:", isOwner);
 
     const transaction = await transactionService.transferToPhone(
       req.user.userId,
@@ -104,16 +116,17 @@ export const transferToPhone = async (req: Request, res: Response): Promise<void
 
     res.status(201).json({
       success: true,
-      message: 'Transfer completed successfully',
+      message: "Transfer completed successfully",
       data: transaction,
     });
+    return;
   } catch (error) {
-    logger.error('Transfer to phone controller error:', error);
-    
+    logger.error("Transfer to phone controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Transfer Failed',
+        error: "Transfer Failed",
         message: error.message,
       });
       return;
@@ -121,8 +134,8 @@ export const transferToPhone = async (req: Request, res: Response): Promise<void
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to complete transfer',
+      error: "Internal Server Error",
+      message: "Failed to complete transfer",
     });
   }
 };
@@ -131,27 +144,34 @@ export const transferToPhone = async (req: Request, res: Response): Promise<void
  * Перевод по номеру счета
  * POST /api/v1/transactions/transfer/account
  */
-export const transferToAccount = async (req: Request, res: Response): Promise<void> => {
+export const transferToAccount = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
 
-    const { from_account_id, to_account_number, amount, description } = req.body;
+    const { from_account_id, to_account_number, amount, description } =
+      req.body;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(from_account_id, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      from_account_id,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -165,16 +185,16 @@ export const transferToAccount = async (req: Request, res: Response): Promise<vo
 
     res.status(201).json({
       success: true,
-      message: 'Transfer completed successfully',
+      message: "Transfer completed successfully",
       data: transaction,
     });
   } catch (error) {
-    logger.error('Transfer to account controller error:', error);
-    
+    logger.error("Transfer to account controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Transfer Failed',
+        error: "Transfer Failed",
         message: error.message,
       });
       return;
@@ -182,8 +202,8 @@ export const transferToAccount = async (req: Request, res: Response): Promise<vo
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to complete transfer',
+      error: "Internal Server Error",
+      message: "Failed to complete transfer",
     });
   }
 };
@@ -192,40 +212,44 @@ export const transferToAccount = async (req: Request, res: Response): Promise<vo
  * Получение транзакции по ID
  * GET /api/v1/transactions/:transactionId
  */
-export const getTransactionById = async (req: Request, res: Response): Promise<void> => {
+export const getTransactionById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
 
     const { transactionId } = req.params;
 
-    const transaction = await transactionService.getTransactionById(transactionId);
+    const transaction =
+      await transactionService.getTransactionById(transactionId);
 
     if (!transaction) {
       res.status(404).json({
         success: false,
-        error: 'Not Found',
-        message: 'Transaction not found',
+        error: "Not Found",
+        message: "Transaction not found",
       });
       return;
     }
 
     // Проверяем принадлежность транзакции пользователю
     let hasAccess = false;
-    
+
     if (transaction.from_account_id) {
       hasAccess = await accountService.isAccountOwner(
         transaction.from_account_id,
         req.user.userId
       );
     }
-    
+
     if (!hasAccess && transaction.to_account_id) {
       hasAccess = await accountService.isAccountOwner(
         transaction.to_account_id,
@@ -236,8 +260,8 @@ export const getTransactionById = async (req: Request, res: Response): Promise<v
     if (!hasAccess) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this transaction',
+        error: "Forbidden",
+        message: "You do not have access to this transaction",
       });
       return;
     }
@@ -247,12 +271,12 @@ export const getTransactionById = async (req: Request, res: Response): Promise<v
       data: transaction,
     });
   } catch (error) {
-    logger.error('Get transaction by ID controller error:', error);
-    
+    logger.error("Get transaction by ID controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get transaction',
+      error: "Internal Server Error",
+      message: "Failed to get transaction",
     });
   }
 };
@@ -261,13 +285,16 @@ export const getTransactionById = async (req: Request, res: Response): Promise<v
  * Получение транзакций счета
  * GET /api/v1/accounts/:accountId/transactions
  */
-export const getAccountTransactions = async (req: Request, res: Response): Promise<void> => {
+export const getAccountTransactions = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -276,13 +303,16 @@ export const getAccountTransactions = async (req: Request, res: Response): Promi
     const { page, limit } = req.query;
 
     // Проверяем принадлежность счета
-    const isOwner = await accountService.isAccountOwner(accountId, req.user.userId);
-    
+    const isOwner = await accountService.isAccountOwner(
+      accountId,
+      req.user.userId
+    );
+
     if (!isOwner) {
       res.status(403).json({
         success: false,
-        error: 'Forbidden',
-        message: 'You do not have access to this account',
+        error: "Forbidden",
+        message: "You do not have access to this account",
       });
       return;
     }
@@ -302,12 +332,12 @@ export const getAccountTransactions = async (req: Request, res: Response): Promi
       data: transactions,
     });
   } catch (error) {
-    logger.error('Get account transactions controller error:', error);
-    
+    logger.error("Get account transactions controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get transactions',
+      error: "Internal Server Error",
+      message: "Failed to get transactions",
     });
   }
 };
@@ -316,13 +346,16 @@ export const getAccountTransactions = async (req: Request, res: Response): Promi
  * Получение всех транзакций пользователя
  * GET /api/v1/transactions
  */
-export const getUserTransactions = async (req: Request, res: Response): Promise<void> => {
+export const getUserTransactions = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -344,12 +377,12 @@ export const getUserTransactions = async (req: Request, res: Response): Promise<
       data: transactions,
     });
   } catch (error) {
-    logger.error('Get user transactions controller error:', error);
-    
+    logger.error("Get user transactions controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get transactions',
+      error: "Internal Server Error",
+      message: "Failed to get transactions",
     });
   }
 };
@@ -358,13 +391,16 @@ export const getUserTransactions = async (req: Request, res: Response): Promise<
  * Получение статистики транзакций
  * GET /api/v1/transactions/stats
  */
-export const getUserTransactionStats = async (req: Request, res: Response): Promise<void> => {
+export const getUserTransactionStats = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
@@ -393,12 +429,12 @@ export const getUserTransactionStats = async (req: Request, res: Response): Prom
       data: stats,
     });
   } catch (error) {
-    logger.error('Get transaction stats controller error:', error);
-    
+    logger.error("Get transaction stats controller error:", error);
+
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to get transaction statistics',
+      error: "Internal Server Error",
+      message: "Failed to get transaction statistics",
     });
   }
 };
@@ -407,26 +443,30 @@ export const getUserTransactionStats = async (req: Request, res: Response): Prom
  * Отмена транзакции
  * POST /api/v1/transactions/:transactionId/cancel
  */
-export const cancelTransaction = async (req: Request, res: Response): Promise<void> => {
+export const cancelTransaction = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({
         success: false,
-        error: 'Unauthorized',
-        message: 'User not authenticated',
+        error: "Unauthorized",
+        message: "User not authenticated",
       });
       return;
     }
 
     const { transactionId } = req.params;
 
-    const transaction = await transactionService.getTransactionById(transactionId);
+    const transaction =
+      await transactionService.getTransactionById(transactionId);
 
     if (!transaction) {
       res.status(404).json({
         success: false,
-        error: 'Not Found',
-        message: 'Transaction not found',
+        error: "Not Found",
+        message: "Transaction not found",
       });
       return;
     }
@@ -437,12 +477,12 @@ export const cancelTransaction = async (req: Request, res: Response): Promise<vo
         transaction.from_account_id,
         req.user.userId
       );
-      
+
       if (!isOwner) {
         res.status(403).json({
           success: false,
-          error: 'Forbidden',
-          message: 'You do not have access to this transaction',
+          error: "Forbidden",
+          message: "You do not have access to this transaction",
         });
         return;
       }
@@ -452,15 +492,15 @@ export const cancelTransaction = async (req: Request, res: Response): Promise<vo
 
     res.status(200).json({
       success: true,
-      message: 'Transaction cancelled successfully',
+      message: "Transaction cancelled successfully",
     });
   } catch (error) {
-    logger.error('Cancel transaction controller error:', error);
-    
+    logger.error("Cancel transaction controller error:", error);
+
     if (error instanceof Error) {
       res.status(400).json({
         success: false,
-        error: 'Cancellation Failed',
+        error: "Cancellation Failed",
         message: error.message,
       });
       return;
@@ -468,8 +508,8 @@ export const cancelTransaction = async (req: Request, res: Response): Promise<vo
 
     res.status(500).json({
       success: false,
-      error: 'Internal Server Error',
-      message: 'Failed to cancel transaction',
+      error: "Internal Server Error",
+      message: "Failed to cancel transaction",
     });
   }
 };
